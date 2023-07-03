@@ -48,7 +48,7 @@ http://localhost/
 
 *Эндпоинты для взаимодействия с API можно посмотреть в документации по адресу:*
 ```
-http://localhost/redoc/
+http://localhost/api/redoc/
 ```
 
 ### Автор
