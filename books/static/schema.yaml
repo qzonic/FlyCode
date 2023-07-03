@@ -302,6 +302,42 @@ paths:
           description: Отображение списка авторов
       tags:
         - USER
+  /api/authors/my/:
+    get:
+      operationId: Свои книги
+      description: "Просмотр книг авторизованного автора"
+      parameters: [ ]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                    example: 123
+                    description: 'Общее количество объектов в базе'
+                  next:
+                    type: string
+                    nullable: true
+                    format: uri
+                    example: http://127.0.0.1:8000/api/authors/?page=4
+                    description: 'Ссылка на следующую страницу'
+                  previous:
+                    type: string
+                    nullable: true
+                    format: uri
+                    example: http://127.0.0.1:8000/api/authors/?page=2
+                    description: 'Ссылка на предыдущую страницу'
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Author'
+                    description: 'Список объектов текущей страницы'
+          description: Отображение списка авторов
+      tags:
+        - USER
   /api/authors/<int:id>/:
     get:
       operationId: Получение конкретного автора
