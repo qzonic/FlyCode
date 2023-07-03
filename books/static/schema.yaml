@@ -1,0 +1,840 @@
+openapi: 3.0.2
+info:
+  title: 'VK Test API'
+  version: 'v1'
+  description: |
+    Запросы к API начинаются с `/api/`
+    # Описание
+    Проект **Books** позволяет пользователям просматривать книги и оставлять к ним комментарии.
+    # Алгоритм регистрации пользователей
+    1. Пользователь отправляет POST-запрос на добавление нового пользователя с параметрами `username` и `password` на эндпоинт `auth/users/`.
+    2. **Books** возвращает данные зарегистрированного пользователя
+    3. Пользователь отправляет POST-запрос с параметрами `username` и `password` на эндпоинт `auth/create/`, в ответе на запрос ему приходят `refresh` и `access` токены.
+tags:
+  - name: AUTH
+    description: Регистрация пользователей и выдача токенов
+  - name: USER
+    description: |
+      Просмотреть информацию об авторах.
+  - name: BOOK
+    description: |
+      Просмотреть информацию о доступных книгах. Добавление новых книг доступно только авторизованным пользователям.
+  - name: COMMENT
+    description: |
+      Просмотреть комментарии к книге. Добавление новых авторов доступно только авторизованным пользователям.
+paths:
+  /api/books/:
+    get:
+      operationId: Список книг
+      description: "Просмотр списка книг с указанием авторов"
+      parameters: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                    example: 123
+                    description: 'Общее количество объектов в базе'
+                  next:
+                    type: string
+                    nullable: true
+                    format: uri
+                    example: http://127.0.0.1:8000/api/books/?page=4
+                    description: 'Ссылка на следующую страницу'
+                  previous:
+                    type: string
+                    nullable: true
+                    format: uri
+                    example: http://127.0.0.1:8000/api/books/?page=2
+                    description: 'Ссылка на предыдущую страницу'
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Book'
+                    description: 'Список объектов текущей страницы'
+          description: Отображение списка книг
+      tags:
+      - BOOK
+    post:
+      operationId: Добавить книгу
+      description: |
+        Добавление книги доступно только авторизованным пользователям.
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BookWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BookWrite'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+          description: 'Книга успешно добавлена'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: 'Ошибка валидации'
+        '401':
+          сontent:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+          description: 'Отсутствует токен'
+      tags:
+        - BOOK
+  /api/books/<int:id>/:
+    get:
+      operationId: Получение конкретной книги
+      description: Просмотреть конкретную книгу по ее id
+      parameters: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+          description: Книга есть
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+          description: 'Книги с таким id нет'
+      tags:
+      - BOOK
+    put:
+      operationId: Полное редактирование книги
+      description: |
+        Редактирование книги доступно только пользователям с правами админа
+      parameters: [ ]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BookWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BookWrite'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+          description: 'Книга успешна обновлена'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: 'Отсутствует обязательное поле или оно некорректно'
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+          description: 'Отсутствует токен'
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionDenied'
+          description: 'Недостаточно прав'
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+          description: 'Книга с таким id не найдена'
+      tags:
+        - BOOK
+    patch:
+      operationId: Частичное редактирование книги
+      description: |
+        Редактирование книги доступно только пользователям с правами админа
+      parameters: [ ]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BookWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BookWrite'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+          description: 'Книга успешна обновлена'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: 'Отсутствует обязательное поле или оно некорректно'
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+          description: 'Отсутствует токен'
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionDenied'
+          description: 'Недостаточно прав'
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+          description: 'Книга с таким id не найдена'
+      tags:
+        - BOOK
+    delete:
+      operationId: Удалить книгу
+      description: Удаление книги доступно только пользователю с правами админа
+      parameters: [ ]
+      responses:
+        '204':
+          description: 'Книга удалена'
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+          description: 'Отсутствует токен'
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionDenied'
+          description: 'Недостаточно прав'
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+          description: 'Книга с таким id не найдена'
+      tags:
+        - BOOK
+
+  /api/authors/:
+    get:
+      operationId: Список авторов
+      description: "Просмотр списка авторов"
+      parameters: [ ]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                    example: 123
+                    description: 'Общее количество объектов в базе'
+                  next:
+                    type: string
+                    nullable: true
+                    format: uri
+                    example: http://127.0.0.1:8000/api/authors/?page=4
+                    description: 'Ссылка на следующую страницу'
+                  previous:
+                    type: string
+                    nullable: true
+                    format: uri
+                    example: http://127.0.0.1:8000/api/authors/?page=2
+                    description: 'Ссылка на предыдущую страницу'
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Author'
+                    description: 'Список объектов текущей страницы'
+          description: Отображение списка авторов
+      tags:
+        - USER
+  /api/authors/<int:id>/:
+    get:
+      operationId: Получение конкретного автора
+      description: Просмотреть конкретного автора по его id
+      parameters: [ ]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Author'
+          description: Автор найден
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+          description: 'Автора с таким id нет'
+      tags:
+        - USER
+    put:
+      operationId: Полное редактирование автора
+      description: |
+        Редактирование автора доступно только ему самому.
+      parameters: [ ]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthorWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AuthorWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AuthorWrite'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Author'
+          description: 'Автор успешн обновлен'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: 'Отсутствует обязательное поле или оно некорректно'
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+          description: 'Отсутствует токен'
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionDenied'
+          description: 'Недостаточно прав'
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+          description: 'Автор с таким id не найден'
+      tags:
+        - USER
+    patch:
+      operationId: Частичное редактирование автора
+      description: |
+        Редактирование автора доступно только ему самому.
+      parameters: [ ]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthorWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AuthorWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AuthorWrite'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Author'
+          description: 'Автор успешн обновлен'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: 'Отсутствует обязательное поле или оно некорректно'
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+          description: 'Отсутствует токен'
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionDenied'
+          description: 'Недостаточно прав'
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+          description: 'Автор с таким id не найден'
+      tags:
+        - USER
+  /api/books/<int:book_id>/comments/:
+    get:
+      operationId: Список комментрариев
+      description: "Просмотр списка комментариев"
+      parameters: [ ]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                    example: 123
+                    description: 'Общее количество объектов в базе'
+                  next:
+                    type: string
+                    nullable: true
+                    format: uri
+                    example: http://127.0.0.1:8000/api/authors/?page=4
+                    description: 'Ссылка на следующую страницу'
+                  previous:
+                    type: string
+                    nullable: true
+                    format: uri
+                    example: http://127.0.0.1:8000/api/authors/?page=2
+                    description: 'Ссылка на предыдущую страницу'
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Comment'
+                    description: 'Список объектов текущей страницы'
+          description: Отображение списка комментариев
+      tags:
+        - COMMENT
+    post:
+      operationId: Добавить комментарий
+      description: |
+        Добавление комментария доступно только авторизованным пользователям
+      parameters: [ ]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommentWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CommentWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CommentWrite'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+          description: 'Комментарий успешно добавлен'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: 'Ошибка валидации'
+        '401':
+          сontent:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+          description: 'Отсутствует токен'
+      tags:
+        - COMMENT
+  /api/books/<int:book_id>/comments/<int:id>:
+    patch:
+      operationId: Частичное редактирование комментария
+      description: |
+        Редактировать комментарий может его автор
+      parameters: [ ]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommentWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CommentWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CommentWrite'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+          description: 'Комментарий успешн обновлен'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: 'Отсутствует обязательное поле или оно некорректно'
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+          description: 'Отсутствует токен'
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionDenied'
+          description: 'Недостаточно прав'
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+          description: 'Комментарий с таким id не найден'
+      tags:
+        - COMMENT
+    delete:
+      operationId: Удалить комментарий
+      description: Удалить комментарий может только автор
+      parameters: [ ]
+      responses:
+        '204':
+          description: 'Комментарий удален'
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+          description: 'Отсутствует токен'
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionDenied'
+          description: 'Недостаточно прав'
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+          description: 'Комментарий с таким id не найден'
+      tags:
+        - COMMENT
+  /api/auth/users/:
+    post:
+      operationId: Регистрация
+      description: Регистрирует пользователя с переданными `username` и `password`
+      parameters: [ ]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserCreate'
+          description: 'Пользователь создан'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: 'Отсутствует обязательное поле или оно некорректно'
+      tags:
+        - AUTH
+
+  /api/auth/jwt/create/:
+    post:
+      operationId: Получение токена
+      description: Возвращает access и refresh токен, если переданные данные корректные
+      parameters: [ ]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenCreate'
+          description: 'Токен создан'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: 'Отсутствует обязательное поле или оно некорректно'
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+          description: 'Переданы некорректные данные'
+      tags:
+        - AUTH
+  /api/auth/jwt/refresh/:
+    post:
+      operationId: Обновить access токен
+      description: Обновляет access токен, если переданный refresh токен корректный
+      parameters: [ ]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh:
+                  type: string
+              required:
+                - refresh
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: 'Токен обновлен'
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                  code:
+                    type: string
+          description: 'Некорректный refresh токен'
+      tags:
+        - AUTH
+components:
+  schemas:
+    Author:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+        books_count:
+          type: integer
+    AuthorWrite:
+      properties:
+        username:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+    Book:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        published_at:
+          type: integer
+        authors:
+          type: array
+          items:
+            $ref: '#/components/schemas/Author'
+        description:
+          type: string
+    BookWrite:
+      type: object
+      properties:
+        name:
+          type: string
+        published_at:
+          type: integer
+        authors:
+          type: array
+          items:
+            type: integer
+        description:
+          type: string
+    Comment:
+      type: object
+      properties:
+        id:
+          type: integer
+        author:
+          type: object
+          $ref: '#/components/schemas/User'
+        book:
+          type: integer
+        published_at:
+          type: string
+        text:
+          type: string
+    CommentWrite:
+      type: object
+      properties:
+        text:
+          type: string
+    ValidationError:
+      title: Ошибка валидации
+      type: object
+      properties:
+        field_name:
+          type: array
+          items:
+            type: string
+    PermissionDenied:
+      type: object
+      properties:
+        detail:
+          description: 'Описание ошибки'
+          example: "У вас недостаточно прав для выполнения данного действия."
+          type: string
+    User:
+      type: object
+      properties:
+        email:
+          type: email
+        id:
+          type: integer
+        username:
+          type: string
+
+    UserCreate:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+\z
+          maxLength: 150
+        id:
+          type: integer
+          readOnly: true
+        password:
+          type: string
+          writeOnly: true
+      required:
+        - username
+        - password
+    TokenObtainPair:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+          writeOnly: true
+      required:
+        - username
+        - password
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+      required:
+        - refresh
+    TokenCreate:
+      type: object
+      properties:
+        refresh:
+          type: string
+        access:
+          type: string

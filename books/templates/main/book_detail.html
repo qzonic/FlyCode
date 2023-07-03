@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% block title %}
+    {{title}}
+{% endblock %}
+
+{% block content %}
+    <div class="col-md-12 text-center">
+        <h3>{{book}}</h3>
+        <div class="row">
+            <div class="col-md-6">
+                {{book.description}}
+            </div>
+            <div class="col-md-6">
+                <div class="panel panel-info">
+                    <div class="panel-heading">
+                        Комментарии
+                    </div>
+                    <div class="panel-body comments">
+                        <form action="{% url 'main:books_detail' pk=book.id %}" method="POST">
+                            {%csrf_token%}
+                            <textarea name="text" class="form-control" placeholder="Оставьте Ваш комментарий" rows="5"></textarea>
+                             <br>
+                            <input type="submit" class="btn btn-success btn-block" value="Отправить">
+                            <hr>
+                        </form>
+                        <ul class="media-list">
+                            {% for comment in book.comments.all %}
+                                <li class="media">
+                                    <div class="comment">
+                                        <div class="media-body">
+                                            <strong class="text-success">{{comment.author}}</strong>
+                                            <span class="text-muted">
+                                                <small class="text-muted">{{comment.published_at|date:"H:i, d-m-Y"}}</small>
+                                            </span>
+                                            <p>
+                                                {{comment.text}}
+                                            </p>
+                                        </div>
+                                        <div class="clearfix"></div>
+                                    </div>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

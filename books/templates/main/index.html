@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}
+{{title}}
+{% endblock %}
+{% block content %}
+{% for book in books %}
+<div class="col-md-6 d-flex justify-content-center">
+    <div class="card m-1" style="width: 18rem;">
+        <div class="card-body">
+            <h5 class="card-title text-center">
+                <a href="{% url 'main:books_detail' pk=book.id %}">{{book.name}}</a>
+            </h5>
+            <h6 class="card-subtitle mb-2 text-body-secondary">
+                {% for author in book.authors.all %}
+                    {% if not forloop.last %}
+                        <a class="link-secondary" href="{% url 'main:author_books' username=author.username%}">{{author}},</a>
+                    {% else %}
+                        <a class="link-secondary" href="{% url 'main:author_books' username=author.username%}">{{author}}.</a>
+                    {% endif %}
+                {% endfor %}
+            </h6>
+            <p class="card-text">{{book.description|truncatewords:15}}</p>
+        </div>
+        <div class="card-footer text-muted">
+            Количество комментариев: {{book.comments.count}}
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}
